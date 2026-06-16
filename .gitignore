@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.env
+*.db
+runs/
+yolo/runs/
+yolo/datasets/
+yolo/weights/
+static/uploads/
+*.pt
+!yolo/weights/.gitkeep
