@@ -1,6 +1,7 @@
 # 矿井安全检查系统
 
 基于 YOLOv8 的明火检测与安全检查记录管理系统。
+<img width="1910" height="915" alt="image" src="https://github.com/user-attachments/assets/d040d7be-049b-4e7c-859a-fbc95a38d62b" />
 
 ## 功能
 
