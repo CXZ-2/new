@@ -13,3 +13,5 @@ yolo/weights/
 static/uploads/
 *.pt
 !yolo/weights/.gitkeep
+venv/
+test_*.jpg
