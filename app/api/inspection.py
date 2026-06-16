@@ -6,6 +6,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.database import get_session
@@ -30,7 +31,10 @@ router = APIRouter()
 def create_team(data: TeamCreate, db: Session = Depends(get_session)):
     """创建施工队"""
     service = InspectionService(db)
-    return service.create_team(data.name, data.team_code)
+    try:
+        return service.create_team(data.name, data.team_code)
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail=f"施工队编号已存在: {data.team_code}")
 
 
 @router.get("/teams", response_model=list[TeamResponse])
@@ -46,7 +50,10 @@ def list_teams(db: Session = Depends(get_session)):
 def create_area(data: AreaCreate, db: Session = Depends(get_session)):
     """创建采区"""
     service = InspectionService(db)
-    return service.create_area(data.name, data.area_code)
+    try:
+        return service.create_area(data.name, data.area_code)
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail=f"采区编号已存在: {data.area_code}")
 
 
 @router.get("/areas", response_model=list[AreaResponse])
