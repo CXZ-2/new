@@ -11,8 +11,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.config import API_PREFIX
+from app.config import API_PREFIX, BASE_DIR
 from app.database import init_db
 
 
@@ -48,15 +49,15 @@ app.add_middleware(
 from app.api.inspection import router as inspection_router
 app.include_router(inspection_router, prefix=API_PREFIX, tags=["安全检查"])
 
+# 静态文件 & 前端页面
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-@app.get("/", tags=["健康检查"])
+
+@app.get("/", tags=["前端"])
 def root():
-    """服务健康检查"""
-    return {
-        "status": "running",
-        "service": "矿井安全检查系统",
-        "version": "1.0.0",
-    }
+    """矿井安全检查系统前端页面"""
+    from fastapi.responses import FileResponse
+    return FileResponse(str(BASE_DIR / "static" / "index.html"))
 
 
 @app.get("/health", tags=["健康检查"])

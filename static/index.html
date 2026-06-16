@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>矿井安全检查系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   BRUTALIST INDUSTRIAL CONTROL ROOM
+   矿井安全监控面板 - 深色工业风
+   ═══════════════════════════════════════════ */
+:root {
+  --bg-deep: #0a0b0e;
+  --bg-panel: #12141a;
+  --bg-card: #181b22;
+  --bg-input: #1c1f28;
+  --border: #252830;
+  --border-active: #3a3d48;
+  --text-primary: #d8d9e0;
+  --text-secondary: #878996;
+  --text-muted: #585b66;
+  --danger: #e63946;
+  --danger-glow: #ff4757;
+  --safe: #2ed573;
+  --safe-glow: #7bed9f;
+  --warn: #ffa502;
+  --warn-glow: #ffbe76;
+  --accent: #ff6348;
+  --accent2: #dfe6e9;
+  --scan-line: rgba(255, 99, 72, 0.03);
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Noto Sans SC', sans-serif;
+  --border-outer: 1px solid var(--border);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, var(--scan-line) 2px, var(--scan-line) 4px),
+    radial-gradient(ellipse at 50% 0%, rgba(255,99,72,0.04) 0%, transparent 70%);
+}
+
+/* ═══ HEADER - 工业控制室顶部状态栏 ═══ */
+.header {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.header::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--danger), var(--warn), transparent);
+  opacity: 0.6;
+}
+.logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: var(--bg-card); border: 1px solid var(--warn);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; position: relative;
+}
+.logo-icon::before {
+  content: '⚠'; animation: blink-warn 2s ease-in-out infinite;
+}
+@keyframes blink-warn {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.logo h1 {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text-primary);
+}
+.logo h1 span { color: var(--warn); }
+
+.status-bar {
+  display: flex; gap: 28px; align-items: center;
+}
+.status-item {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-size: 13px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+.status-dot.online { background: var(--safe); color: var(--safe); }
+.status-dot.warning { background: var(--warn); color: var(--warn); animation: pulse-dot 1.5s ease-in-out infinite; }
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 4px currentColor; }
+  50% { box-shadow: 0 0 14px currentColor, 0 0 24px currentColor; }
+}
+
+/* ═══ MAIN LAYOUT ═══ */
+.main-container {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  padding: 24px 32px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ═══ LEFT PANEL ═══ */
+.left-panel {
+  display: flex; flex-direction: column; gap: 20px;
+}
+.panel-card {
+  background: var(--bg-panel);
+  border: var(--border-outer);
+  padding: 20px;
+  position: relative;
+}
+.panel-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--danger), transparent);
+}
+.panel-card-header {
+  font-family: var(--font-display); font-size: 14px;
+  font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.panel-card-header::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+.form-group:last-child { margin-bottom: 0; }
+.form-label {
+  display: block; font-size: 11px; font-weight: 500;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.form-input, .form-select {
+  width: 100%; padding: 10px 12px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text-primary); font-family: var(--font-body);
+  font-size: 13px; outline: none; transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255,99,72,0.1);
+}
+.form-select { cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23878996'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+
+.btn {
+  width: 100%; padding: 10px;
+  font-family: var(--font-display); font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.btn-primary {
+  background: var(--danger); border-color: var(--danger); color: #fff;
+}
+.btn-primary:hover { background: var(--danger-glow); box-shadow: 0 0 20px rgba(255,71,87,0.3); }
+.btn-secondary {
+  background: transparent; color: var(--text-secondary);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+.success-msg {
+  font-size: 11px; color: var(--safe); margin-top: 8px;
+  display: none; letter-spacing: 0.5px;
+}
+
+/* ═══ RIGHT PANEL - Upload ═══ */
+.upload-card {
+  background: var(--bg-panel); border: var(--border-outer);
+  padding: 24px; margin-bottom: 24px;
+  position: relative;
+}
+.upload-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg, var(--warn), transparent);
+}
+.upload-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px; align-items: end;
+}
+.upload-photo-area {
+  grid-column: 1 / -1; margin-bottom: 8px;
+}
+.photo-upload-zone {
+  border: 2px dashed var(--border); padding: 28px;
+  text-align: center; cursor: pointer; transition: all 0.2s;
+  background: var(--bg-input); min-height: 100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
+}
+.photo-upload-zone:hover {
+  border-color: var(--warn);
+  background: rgba(255,165,2,0.03);
+}
+.photo-upload-zone.has-file {
+  border-style: solid; border-color: var(--safe);
+  background: rgba(46,213,115,0.03);
+}
+.photo-icon { font-size: 28px; opacity: 0.5; }
+.photo-text { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; }
+.photo-name { font-size: 12px; color: var(--safe); margin-top: 4px; }
+.upload-btn {
+  padding: 11px; font-family: var(--font-display);
+  font-size: 14px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; cursor: pointer;
+  background: var(--warn); border: none; color: #000;
+  transition: all 0.2s;
+}
+.upload-btn:hover { box-shadow: 0 0 24px rgba(255,165,2,0.4); }
+.upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ═══ RESULTS TABLE ═══ */
+.results-panel {
+  background: var(--bg-panel); border: var(--border-outer);
+  overflow: hidden;
+}
+.results-panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg, var(--safe), transparent);
+}
+.results-header {
+  padding: 18px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.results-title {
+  font-family: var(--font-display); font-size: 14px;
+  font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.filter-row {
+  display: flex; gap: 10px; align-items: center;
+}
+.filter-row .form-input, .filter-row .form-select {
+  width: auto; min-width: 120px; padding: 7px 10px; font-size: 12px;
+}
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+thead { border-bottom: 2px solid var(--border); }
+th {
+  padding: 12px 16px; text-align: left;
+  font-family: var(--font-display); font-size: 11px;
+  font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); white-space: nowrap;
+}
+td {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: var(--bg-card); }
+
+.badge {
+  display: inline-block; padding: 3px 10px; font-size: 11px;
+  font-family: var(--font-display); font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.badge-danger {
+  background: rgba(230,57,70,0.15); color: var(--danger-glow);
+  border: 1px solid rgba(230,57,70,0.3);
+  box-shadow: 0 0 8px rgba(230,57,70,0.15);
+}
+.badge-safe {
+  background: rgba(46,213,115,0.1); color: var(--safe);
+  border: 1px solid rgba(46,213,115,0.2);
+}
+.confidence-bar {
+  width: 80px; height: 4px; background: var(--bg-input);
+  display: inline-block; vertical-align: middle; margin-left: 8px;
+}
+.confidence-bar-inner {
+  height: 100%; background: var(--danger);
+  box-shadow: 0 0 6px rgba(230,57,70,0.5);
+}
+.conf-bar-safe { background: var(--safe); box-shadow: 0 0 6px rgba(46,213,115,0.3); }
+
+/* Pagination */
+.pagination {
+  display: flex; align-items: center; justify-content: center;
+  gap: 4px; padding: 16px 24px; border-top: 1px solid var(--border);
+}
+.page-btn {
+  padding: 6px 12px; background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text-secondary); cursor: pointer; font-size: 12px;
+  transition: all 0.15s;
+}
+.page-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.page-info {
+  font-size: 11px; color: var(--text-muted); margin: 0 12px;
+  letter-spacing: 0.5px;
+}
+
+.empty-state {
+  text-align: center; padding: 60px 24px; color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state p { font-size: 13px; letter-spacing: 1px; }
+
+/* Toast */
+.toast {
+  position: fixed; top: 80px; right: 32px; z-index: 999;
+  padding: 14px 20px; font-size: 13px;
+  font-family: var(--font-display); letter-spacing: 1px;
+  animation: slide-in 0.3s ease-out;
+  display: none;
+}
+.toast.success { background: #1a3a2a; border: 1px solid var(--safe); color: var(--safe-glow); }
+.toast.error { background: #3a1a1a; border: 1px solid var(--danger); color: var(--danger-glow); }
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-input) 25%, var(--bg-card) 50%, var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .main-container {
+    grid-template-columns: 1fr;
+  }
+  .upload-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .header { padding: 0 16px; }
+  .main-container { padding: 16px; }
+  .upload-grid { grid-template-columns: 1fr; }
+  .filter-row { flex-wrap: wrap; }
+  .logo h1 { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <h1>矿井安全<span>监控</span></h1>
+  </div>
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-dot online"></span> 模型就绪
+    </div>
+    <div class="status-item">
+      <span class="status-dot warning"></span> 实时监控中
+    </div>
+    <div class="status-item" id="total-records">
+      记录: --
+    </div>
+  </div>
+</header>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main-container">
+
+  <!-- LEFT PANEL: 施工队 & 采区管理 -->
+  <aside class="left-panel">
+    <div class="panel-card">
+      <div class="panel-card-header">施工队管理</div>
+      <div class="form-group">
+        <label class="form-label">施工队名称</label>
+        <input class="form-input" id="team-name" placeholder="例：掘进一队">
+      </div>
+      <div class="form-group">
+        <label class="form-label">施工队编号</label>
+        <input class="form-input" id="team-code" placeholder="例：T001">
+      </div>
+      <button class="btn btn-primary" onclick="createTeam()">创建施工队</button>
+      <div class="success-msg" id="team-msg"></div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-card-header">采区管理</div>
+      <div class="form-group">
+        <label class="form-label">采区名称</label>
+        <input class="form-input" id="area-name" placeholder="例：A采区">
+      </div>
+      <div class="form-group">
+        <label class="form-label">采区编号</label>
+        <input class="form-input" id="area-code" placeholder="例：A01">
+      </div>
+      <button class="btn btn-primary" onclick="createArea()">创建采区</button>
+      <div class="success-msg" id="area-msg"></div>
+    </div>
+  </aside>
+
+  <!-- RIGHT: Upload + Records -->
+  <main>
+    <!-- Upload Card -->
+    <div class="upload-card">
+      <div class="panel-card-header" style="margin-bottom:20px;">安全检查申报</div>
+      <div class="upload-grid">
+        <div class="upload-photo-area">
+          <div class="photo-upload-zone" id="drop-zone" onclick="document.getElementById('photo-input').click()">
+            <span class="photo-icon" id="photo-icon">📷</span>
+            <span class="photo-text">点击或拖拽上传现场照片</span>
+            <span class="photo-name" id="photo-name"></span>
+          </div>
+          <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhotoSelect(event)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">检查日期</label>
+          <input class="form-input" type="date" id="inspection-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">施工队</label>
+          <select class="form-select" id="upload-team"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">采区</label>
+          <select class="form-select" id="upload-area"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">班组</label>
+          <input class="form-input" id="shift" placeholder="例：白班">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="upload-btn" onclick="submitInspection()" style="width:100%;">提交检测</button>
+      </div>
+    </div>
+
+    <!-- Records Panel -->
+    <div class="results-panel" style="position:relative;">
+      <div class="results-header">
+        <span class="results-title">检测记录</span>
+        <div class="filter-row">
+          <select class="form-select" id="filter-team" onchange="loadRecords()">
+            <option value="">全部施工队</option>
+          </select>
+          <select class="form-select" id="filter-area" onchange="loadRecords()">
+            <option value="">全部采区</option>
+          </select>
+          <select class="form-select" id="filter-safe" onchange="loadRecords()">
+            <option value="">全部状态</option>
+            <option value="true">安全</option>
+            <option value="false">危险</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>日期</th><th>施工队</th><th>采区</th>
+              <th>班组</th><th>检测结果</th><th>置信度</th><th>时间</th>
+            </tr>
+          </thead>
+          <tbody id="records-body">
+            <tr class="empty-state">
+              <td colspan="8">
+                <div class="empty-icon">⊡</div>
+                <p>暂无检测记录</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   FRONTEND LOGIC
+   ═══════════════════════════════════════════ */
+const API = '/api/v1';
+
+// ─── INIT ────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inspection-date').value = new Date().toISOString().split('T')[0];
+  loadTeams();
+  loadAreas();
+  loadFilterOptions();
+  loadRecords();
+
+  // Drag & drop
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--warn)'; });
+  dz.addEventListener('dragleave', () => dz.style.borderColor = '');
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) setPhotoFile(file);
+  });
+});
+
+// ─── TOAST ──────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// ─── PHOTO ──────────────────
+let selectedPhoto = null;
+function handlePhotoSelect(e) {
+  const file = e.target.files[0];
+  if (file) setPhotoFile(file);
+}
+function setPhotoFile(file) {
+  selectedPhoto = file;
+  const zone = document.getElementById('drop-zone');
+  zone.classList.add('has-file');
+  document.getElementById('photo-icon').textContent = '📸';
+  document.getElementById('photo-name').textContent = file.name;
+}
+
+// ─── CREATE TEAM ───────────
+async function createTeam() {
+  const name = document.getElementById('team-name').value.trim();
+  const code = document.getElementById('team-code').value.trim();
+  if (!name || !code) return showToast('请填写完整信息', 'error');
+  try {
+    const resp = await fetch(`${API}/teams`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, team_code: code })
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail); }
+    document.getElementById('team-name').value = '';
+    document.getElementById('team-code').value = '';
+    showToast(`施工队 [${code}] 创建成功`);
+    loadTeams(); loadFilterOptions();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ─── CREATE AREA ────────────
+async function createArea() {
+  const name = document.getElementById('area-name').value.trim();
+  const code = document.getElementById('area-code').value.trim();
+  if (!name || !code) return showToast('请填写完整信息', 'error');
+  try {
+    const resp = await fetch(`${API}/areas`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, area_code: code })
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail); }
+    document.getElementById('area-name').value = '';
+    document.getElementById('area-code').value = '';
+    showToast(`采区 [${code}] 创建成功`);
+    loadAreas(); loadFilterOptions();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ─── LOAD SELECT OPTIONS ────
+async function loadTeams() {
+  try {
+    const resp = await fetch(`${API}/teams`);
+    const teams = await resp.json();
+    const sel = document.getElementById('upload-team');
+    sel.innerHTML = '<option value="">请选择施工队</option>';
+    teams.forEach(t => sel.innerHTML += `<option value="${t.id}">${t.name} (${t.team_code})</option>`);
+  } catch (e) {}
+}
+async function loadAreas() {
+  try {
+    const resp = await fetch(`${API}/areas`);
+    const areas = await resp.json();
+    const sel = document.getElementById('upload-area');
+    sel.innerHTML = '<option value="">请选择采区</option>';
+    areas.forEach(a => sel.innerHTML += `<option value="${a.id}">${a.name} (${a.area_code})</option>`);
+  } catch (e) {}
+}
+async function loadFilterOptions() {
+  try {
+    const respT = await fetch(`${API}/teams`);
+    const teams = await respT.json();
+    const selT = document.getElementById('filter-team');
+    selT.innerHTML = '<option value="">全部施工队</option>';
+    teams.forEach(t => selT.innerHTML += `<option value="${t.id}">${t.name} (${t.team_code})</option>`);
+
+    const respA = await fetch(`${API}/areas`);
+    const areas = await respA.json();
+    const selA = document.getElementById('filter-area');
+    selA.innerHTML = '<option value="">全部采区</option>';
+    areas.forEach(a => selA.innerHTML += `<option value="${a.id}">${a.name} (${a.area_code})</option>`);
+  } catch (e) {}
+}
+
+// ─── SUBMIT INSPECTION ─────
+async function submitInspection() {
+  const date = document.getElementById('inspection-date').value;
+  const team = document.getElementById('upload-team').value;
+  const area = document.getElementById('upload-area').value;
+  const shift = document.getElementById('shift').value.trim();
+
+  if (!date || !team || !area || !shift) return showToast('请填写所有字段', 'error');
+  if (!selectedPhoto) return showToast('请选择照片', 'error');
+
+  const btn = document.querySelector('.upload-btn');
+  btn.disabled = true; btn.textContent = '检测中...';
+
+  try {
+    const form = new FormData();
+    form.append('inspection_date', date);
+    form.append('team_id', team);
+    form.append('area_id', area);
+    form.append('shift', shift);
+    form.append('photo', selectedPhoto);
+
+    const resp = await fetch(`${API}/inspections`, { method: 'POST', body: form });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail); }
+    const data = await resp.json();
+
+    const status = data.is_safe ? '✅ 安全' : '⚠️ 危险! 检测到明火';
+    showToast(status + ` (置信度: ${(data.model_confidence * 100).toFixed(1)}%)`, data.is_safe ? 'success' : 'error');
+
+    // Reset form
+    selectedPhoto = null;
+    document.getElementById('photo-input').value = '';
+    document.getElementById('drop-zone').classList.remove('has-file');
+    document.getElementById('photo-icon').textContent = '📷';
+    document.getElementById('photo-name').textContent = '';
+    document.getElementById('shift').value = '';
+    loadRecords();
+  } catch (err) { showToast(err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '提交检测'; }
+}
+
+// ─── LOAD RECORDS ──────────
+let currentPage = 1;
+async function loadRecords(page = 1) {
+  currentPage = page;
+  const team = document.getElementById('filter-team').value;
+  const area = document.getElementById('filter-area').value;
+  const safe = document.getElementById('filter-safe').value;
+
+  const params = new URLSearchParams({ page, page_size: 15 });
+  if (team) params.append('team_id', team);
+  if (area) params.append('area_id', area);
+  if (safe !== '') params.append('is_safe', safe);
+
+  try {
+    const resp = await fetch(`${API}/inspections?${params}`);
+    const data = await resp.json();
+
+    document.getElementById('total-records').textContent = `记录: ${data.total}`;
+
+    const tbody = document.getElementById('records-body');
+    if (!data.items.length) {
+      tbody.innerHTML = `<tr class="empty-state"><td colspan="8"><div class="empty-icon">⊡</div><p>暂无检测记录</p></td></tr>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = data.items.map(r => {
+      const confidenceClass = r.is_safe ? 'conf-bar-safe' : '';
+      const badgeClass = r.is_safe ? 'badge-safe' : 'badge-danger';
+      const badgeText = r.is_safe ? '安全' : '危险';
+      const dateStr = r.inspection_date;
+      const timeStr = new Date(r.created_at).toLocaleString('zh-CN');
+      const confidencePct = (r.model_confidence * 100).toFixed(1);
+      return `<tr>
+        <td>#${r.id}</td>
+        <td>${dateStr}</td>
+        <td>施工队 ${r.team_id}</td>
+        <td>采区 ${r.area_id}</td>
+        <td>${r.shift}</td>
+        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td style="white-space:nowrap;">
+          ${confidencePct}%
+          <span class="confidence-bar"><span class="confidence-bar-inner ${confidenceClass}" style="width:${confidencePct}%"></span></span>
+        </td>
+        <td>${timeStr}</td>
+      </tr>`;
+    }).join('');
+
+    // Pagination
+    const pagDiv = document.getElementById('pagination');
+    let html = '';
+    html += `<button class="page-btn" onclick="loadRecords(${data.page - 1})" ${data.page <= 1 ? 'disabled' : ''}>◀</button>`;
+    for (let i = 1; i <= data.total_pages; i++) {
+      if (data.total_pages <= 7 || i === 1 || i === data.total_pages || Math.abs(i - data.page) <= 2) {
+        html += `<button class="page-btn ${i === data.page ? 'active' : ''}" onclick="loadRecords(${i})">${i}</button>`;
+      } else if (i === 2 && data.page > 4) {
+        html += `<span style="color:var(--text-muted);padding:0 4px;">…</span>`;
+      } else if (i === data.total_pages - 1 && data.page < data.total_pages - 3) {
+        html += `<span style="color:var(--text-muted);padding:0 4px;">…</span>`;
+      }
+    }
+    html += `<button class="page-btn" onclick="loadRecords(${data.page + 1})" ${data.page >= data.total_pages ? 'disabled' : ''}>▶</button>`;
+    html += `<span class="page-info">共 ${data.total} 条 / ${data.total_pages} 页</span>`;
+    pagDiv.innerHTML = html;
+  } catch (e) {
+    console.error(e);
+  }
+}
+</script>
+</body>
+</html>
